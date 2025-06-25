@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
+#include <BinaryMatMul.h>
 
 
 int main()

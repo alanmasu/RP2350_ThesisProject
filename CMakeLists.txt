@@ -44,9 +44,13 @@ pico_set_program_version(Tesi "0.1")
 pico_enable_stdio_uart(Tesi 0)
 pico_enable_stdio_usb(Tesi 1)
 
+# Add my library
+add_subdirectory(BinaryMatMul)
+
 # Add the standard library to the build
 target_link_libraries(Tesi
-        pico_stdlib)
+        pico_stdlib
+        BinaryMatMul)
 
 # Add the standard include files to the build
 target_include_directories(Tesi PRIVATE
