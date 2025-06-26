@@ -83,9 +83,15 @@ void printResults(){
     printf("Label,size(bit),timestamp(us),platform\n");
     for(int i = 0; i < timesIndex / TIMES_NUM; ++i){
         for (int label = 0; label < TIMES_NUM; ++label) {            
-            absolute_time_t start = times[i * TIMES_NUM];
-            printf("%s,%d,%llu,RP2350\n", labels[label], sizes[i * TIMES_NUM + label], 
-                   absolute_time_diff_us(start, times[i * TIMES_NUM + label]));
+            if (label == 0){
+                absolute_time_t start = times[i * TIMES_NUM];
+                int64_t diff = i == 0 ? times[0] : absolute_time_diff_us(times[i * TIMES_NUM], times[(i - 1) * TIMES_NUM]);
+                printf("%s,%d,,%llu,RP2350\n", labels[label], sizes[i * TIMES_NUM + label], diff);
+            }else{  
+                absolute_time_t start = times[i * TIMES_NUM];
+                printf("%s,%d,,%llu,RP2350\n", labels[label], sizes[i * TIMES_NUM + label], 
+                    absolute_time_diff_us(start, times[i * TIMES_NUM + label]));
+            }
         }
     }
         
