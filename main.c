@@ -65,34 +65,47 @@ void set_sys_clock_40mhz() {
 }
 
 #define ITERATIONS 6
-#define TIMES_NUM 4
+#define TIMES_NUM 9
 
 absolute_time_t times[TIMES_NUM * ITERATIONS] = {0};
-uint32_t sizes[TIMES_NUM * ITERATIONS] = {0};
+absolute_time_t startTime = 0;
+uint32_t sizes[ITERATIONS] = {0};
+uint32_t sizeIndex = 0;
 uint32_t timesIndex = 0;
 uint32_t testN = 0;
 
-char labels[TIMES_NUM][100] = {
+char labels[TIMES_NUM][25] = {
     "Allocazione",
     "Popolazione",
+    "Caricamento",
+    "Settaggio",
+    "Inizializzazione",
+    "ComputazioneBTPU",
+    "LetturaRisultato",
     "ComputazioneSerialeFast",
     "freeMemory"
 };
 
 void printResults(){
-    printf("Label,size(bit),timestamp(us),platform\n");
-    for(int i = 0; i < timesIndex / TIMES_NUM; ++i){
-        for (int label = 0; label < TIMES_NUM; ++label) {            
-            if (label == 0){
-                absolute_time_t start = times[i * TIMES_NUM];
-                int64_t diff = i == 0 ? times[0] : absolute_time_diff_us(times[i * TIMES_NUM], times[(i - 1) * TIMES_NUM]);
-                printf("%s,%d,%llu,RP2350\n", labels[label], sizes[i * TIMES_NUM + label], diff);
-            }else{  
-                absolute_time_t start = times[i * TIMES_NUM];
-                printf("%s,%d,%llu,RP2350\n", labels[label], sizes[i * TIMES_NUM + label], 
-                    absolute_time_diff_us(start, times[i * TIMES_NUM + label]));
+    printf("size(bit),");
+    for(int label = 0; label < TIMES_NUM - 1; ++label){
+        printf("%s,", labels[label]);
+    }
+    printf("%s,platform\n", labels[TIMES_NUM - 1]);
+    
+    absolute_time_t toPrint = 0;
+    for(int size = 0; size < sizeIndex; ++size){
+        printf("%d,", sizes[size]);
+        for (int time = 0; time < TIMES_NUM - 1; ++time) {
+            if(time == 0 && size == 0){
+                toPrint = absolute_time_diff_us(startTime, times[0]);
+            } else {
+                toPrint = absolute_time_diff_us(times[size * TIMES_NUM + time - 1], times[size * TIMES_NUM + time]);
             }
+            printf("%llu,", toPrint);
         }
+        toPrint = absolute_time_diff_us(times[size * TIMES_NUM + TIMES_NUM - 2], times[size * TIMES_NUM + TIMES_NUM - 1]);
+        printf("%llu,RP2350\n", toPrint);
     }
         
 }
@@ -109,14 +122,16 @@ int main(){
     int bn = 0;
     const uint32_t signCmp = 48;
 
+    startTime = get_absolute_time();
+
     for(int i = 0, n = 32; i < ITERATIONS; ++i, n *= 2){
+
         bn = n / 32;
         
         BinaryMatrix_t A = (BinaryMatrix_t)malloc(n * (n / 32) * sizeof(uint32_t));         //768 byte
         BinaryMatrix_t W = (BinaryMatrix_t)malloc(n * (n / 32) * sizeof(uint32_t));         // 1.536 kB
         BinaryMatrix_t OSerial = (BinaryMatrix_t)malloc(n * (n / 32) * sizeof(uint32_t));   // 1 kB
 
-        sizes[timesIndex] = n;
         times[timesIndex++] = get_absolute_time();
 
         if(!A || !W || !OSerial){
@@ -127,6 +142,7 @@ int main(){
             while(1);
         }
 
+        sizes[sizeIndex++] = n;
         ++testN;
 
         PRINTF_DBG("Memory allocation successful!\n");
@@ -140,8 +156,12 @@ int main(){
         }
         memset(OSerial, 0, n * (n / 32) * sizeof(uint32_t));
 
-        sizes[timesIndex] = n;
-        times[timesIndex++] = get_absolute_time();
+        times[timesIndex++] = get_absolute_time(); // Popolazione
+        times[timesIndex++] = get_absolute_time(); // Caricamento
+        times[timesIndex++] = get_absolute_time(); // Settaggio
+        times[timesIndex++] = get_absolute_time(); // Inizializzazione
+        times[timesIndex++] = get_absolute_time(); // ComputazioneBTPU
+        times[timesIndex++] = get_absolute_time(); // LetturaRisultato
 
         PRINTF_DBG("\nMatrice A:\n");
         PROFILING_ENV_EXCLUSION(printIntBMatrixN(A, 2, 2, n, n);)
@@ -154,7 +174,6 @@ int main(){
 
         fastBinaryMatrixMul(A, W, OSerial, signCmp, n, n, n);
 
-        sizes[timesIndex] = n;
         times[timesIndex++] = get_absolute_time();
 
 
@@ -162,7 +181,6 @@ int main(){
         free(W);
         free(OSerial);
 
-        sizes[timesIndex] = n;
         times[timesIndex++] = get_absolute_time();
     }
     PRINTF_LOG("\nAll tests completed!\n");
