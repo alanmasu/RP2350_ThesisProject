@@ -6,7 +6,7 @@
 #include "hardware/pll.h"
 #include "hardware/xosc.h"
 
-#define PLL_SYS_KHZ (40 * 1000)
+#define PLL_40_MHZ (40 * 1000)
 
 int pico_led_init(void) {
 #if defined(PICO_DEFAULT_LED_PIN)
@@ -33,24 +33,7 @@ void pico_set_led(bool led_on) {
 }
 
 void set_sys_clock_40mhz() {
-    // pico_set_led(set_sys_clock_khz(40 * 1000, true));
-    set_sys_clock_khz(PLL_SYS_KHZ, true);
-
-    // clock_configure(clk_sys,
-    //     CLOCKS_CLK_SYS_CTRL_SRC_VALUE_CLK_REF,  // usa clk_ref direttamente
-    //     0,                                       // auxsrc non usato
-    //     12 * MHZ,
-    //     40 * MHZ
-    // );  
-
-    // Configura clk_peri a partire da PLL_SYS
-    // clock_configure(
-    //     clk_peri,
-    //     0,                                                // No glitchless mux
-    //     CLOCKS_CLK_PERI_CTRL_AUXSRC_VALUE_CLKSRC_PLL_SYS, // System PLL on AUX mux
-    //     PLL_SYS_KHZ * 1000,                               // Input frequency
-    //     PLL_SYS_KHZ * 1000                                // Output (must be same as no divider)
-    // );
+    pico_set_led(set_sys_clock_khz(PLL_40_MHZ, true));
 }
 
 int main(){
@@ -60,6 +43,7 @@ int main(){
     set_sys_clock_40mhz();
     
     stdio_init_all();
+    printf("Running at %u KHz\n", frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS));
     while (true) {
         printf("Hello, world!\n");
         sleep_ms(1000);
