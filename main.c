@@ -64,7 +64,7 @@ void set_sys_clock_40mhz() {
     pico_set_led(set_sys_clock_khz(PLL_40_MHZ, true));
 }
 
-#define ITERATIONS 6
+#define ITERATIONS 5
 #define TIMES_NUM 9
 
 absolute_time_t times[TIMES_NUM * ITERATIONS] = {0};
@@ -122,6 +122,18 @@ int main(){
     int bn = 0;
     const uint32_t signCmp = 48;
 
+    BTPU0RegFile = (BTPURegFile_t*)malloc(sizeof(BTPURegFile_t));
+    BTPU0_W_MEMORY = (BinaryFragment_t*)malloc(1024 * sizeof(BinaryFragment_t));
+    BTPU0_IO0_MEMORY = (BinaryFragment_t*)malloc(1024 * sizeof(BinaryFragment_t));
+    BTPU0_IO1_MEMORY = (BinaryFragment_t*)malloc(1024 * sizeof(BinaryFragment_t));
+
+    if(!BTPU0RegFile || !BTPU0_W_MEMORY || !BTPU0_IO0_MEMORY || !BTPU0_IO1_MEMORY){
+        PRINTF_ERR("[ERROR]: Memory allocation failed for BTPU structures!\n");
+        // PRINTF_ERR("BTPU0RegFile: %p, BTPU0_W_MEMORY: %p, BTPU0_IO0_MEMORY: %p, BTPU0_IO1_MEMORY: %p\n", 
+        //            BTPU0RegFile, BTPU0_W_MEMORY, BTPU0_IO0_MEMORY, BTPU0_IO1_MEMORY);
+        return -1;
+    }
+
     startTime = get_absolute_time();
 
     for(int i = 0, n = 32; i < ITERATIONS; ++i, n *= 2){
@@ -136,7 +148,7 @@ int main(){
 
         if(!A || !W || !OSerial){
             PRINTF_ERR("[ERROR]: Memory allocation failed -> N: %d\n", n);
-            PRINTF_ERR("A: %p, W: %p, OSerial: %p\n", A, W, OSerial);
+            // PRINTF_ERR("A: %p, W: %p, OSerial: %p\n", A, W, OSerial);
             printResults();
             PRINTF_ERR("Exiting...\n");
             while(1);
@@ -157,10 +169,21 @@ int main(){
         memset(OSerial, 0, n * (n / 32) * sizeof(uint32_t));
 
         times[timesIndex++] = get_absolute_time(); // Popolazione
+
+        loadBinaryMatrixToFragments(A, BTPU0_IO0_MEMORY, n, n);
+        loadBinaryMatrixToFragments(W, BTPU0_W_MEMORY, n, n);
         times[timesIndex++] = get_absolute_time(); // Caricamento
+
+        btpuSetBlocks(BTPU0RegFile, bn, bn, bn);
+        btpuSetAddrs(BTPU0RegFile, 0, 0, bn * bn); 
         times[timesIndex++] = get_absolute_time(); // Settaggio
+
+        btpuStartBinaryMatrixMul(BTPU0RegFile, signCmp, true, true, BTPU_USE_MEMORY_0_CONFIG);
         times[timesIndex++] = get_absolute_time(); // Inizializzazione
+
         times[timesIndex++] = get_absolute_time(); // ComputazioneBTPU
+
+        storeFramentsToBinaryMatrix(BTPU0_IO1_MEMORY + (bn * bn), OSerial, n, n);
         times[timesIndex++] = get_absolute_time(); // LetturaRisultato
 
         PRINTF_DBG("\nMatrice A:\n");
@@ -181,8 +204,18 @@ int main(){
         free(W);
         free(OSerial);
 
+        A = NULL;
+        W = NULL;
+        OSerial = NULL;
+
         times[timesIndex++] = get_absolute_time();
     }
+
+    free(BTPU0RegFile);
+    free(BTPU0_W_MEMORY);
+    free(BTPU0_IO0_MEMORY);
+    free(BTPU0_IO1_MEMORY);
+
     PRINTF_LOG("\nAll tests completed!\n");
     printResults();
 
