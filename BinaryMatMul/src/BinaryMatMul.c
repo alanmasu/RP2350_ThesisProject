@@ -70,9 +70,12 @@ uint32_t xnor32(const uint32_t a, const uint32_t b) {
 }
 
 uint32_t binaryMul(const uint32_t a, const uint32_t b) {
+    absolute_time_t startTime = get_absolute_time();
     uint32_t result;
     result = xnor32(a, b);
     result = popcount32(result);
+    absolute_time_t endTime = get_absolute_time();
+    computeTime += absolute_time_diff_us(startTime, endTime);
     return result; 
 }
 

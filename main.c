@@ -75,6 +75,8 @@ uint32_t timesIndex = 0;
 uint32_t testN = 0;
 absolute_time_t transposeTimes[ITERATIONS] = {0};
 uint32_t transposeTimesIndex = 0;
+absolute_time_t computeTimes[ITERATIONS] = {0};
+uint32_t computeTimesIndex = 0;
 
 char labels[TIMES_NUM][25] = {
     "Allocazione",
@@ -93,7 +95,7 @@ void printResults(){
     for(int label = 0; label < TIMES_NUM - 1; ++label){
         printf("%s,", labels[label]);
     }
-    printf("%s,transposeTime,platform\n", labels[TIMES_NUM - 1]);
+    printf("%s,transposeTime,computeTime,platform\n", labels[TIMES_NUM - 1]);
     
     absolute_time_t toPrint = 0;
     for(int size = 0; size < sizeIndex; ++size){
@@ -107,7 +109,7 @@ void printResults(){
             printf("%llu,", toPrint);
         }
         toPrint = absolute_time_diff_us(times[size * TIMES_NUM + TIMES_NUM - 2], times[size * TIMES_NUM + TIMES_NUM - 1]);
-        printf("%llu,%llu,RP2350\n", toPrint, transposeTimes[size]);
+        printf("%llu,%llu,%llu,RP2350\n", toPrint, transposeTimes[size], computeTimes[size]);
     }
 }
 
@@ -139,6 +141,8 @@ int main(){
 
     for(int i = 0, n = 32; i < ITERATIONS; ++i, n *= 2){
         transposeTime = 0;
+        computeTime = 0;
+
         bn = n / 32;
         
         BinaryMatrix_t A = (BinaryMatrix_t)malloc(n * (n / 32) * sizeof(uint32_t));         //768 byte
@@ -211,6 +215,7 @@ int main(){
 
         times[timesIndex++] = get_absolute_time();
         transposeTimes[transposeTimesIndex++] = transposeTime;
+        computeTimes[computeTimesIndex++] = computeTime;
     }
 
     free(BTPU0RegFile);

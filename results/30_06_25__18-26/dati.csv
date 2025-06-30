@@ -1,0 +1,6 @@
+size(bit),Allocazione,Popolazione,Caricamento,Settaggio,Inizializzazione,ComputazioneBTPU,LetturaRisultato,ComputazioneSerialeFast,freeMemory,transposeTime,computeTime,platform
+32,36,65,47,23,22,6,31,2950,72,494,851,RP2350
+64,68,54,61,9,8,6,30,20342,34,3781,6659,RP2350
+128,18,124,145,4,1,1,73,155989,16,30345,52829,RP2350
+256,18,489,550,1,2,0,278,1222713,11,243594,421048,RP2350
+512,20,1948,2177,1,2,1,1096,9684375,11,1955309,3362022,RP2350
