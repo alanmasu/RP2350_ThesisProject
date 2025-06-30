@@ -25,6 +25,10 @@ endif()
 # ====================================================================================
 set(PICO_BOARD pico2 CACHE STRING "Board type")
 
+# # Compiling whit optimizations
+# set(CMAKE_BUILD_TYPE Release)
+# set(CMAKE_C_FLAGS_RELEASE "-O3")
+
 # Pull in Raspberry Pi Pico SDK (must be before project)
 include(pico_sdk_import.cmake)
 

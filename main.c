@@ -73,6 +73,8 @@ uint32_t sizes[ITERATIONS] = {0};
 uint32_t sizeIndex = 0;
 uint32_t timesIndex = 0;
 uint32_t testN = 0;
+absolute_time_t transposeTimes[ITERATIONS] = {0};
+uint32_t transposeTimesIndex = 0;
 
 char labels[TIMES_NUM][25] = {
     "Allocazione",
@@ -91,7 +93,7 @@ void printResults(){
     for(int label = 0; label < TIMES_NUM - 1; ++label){
         printf("%s,", labels[label]);
     }
-    printf("%s,platform\n", labels[TIMES_NUM - 1]);
+    printf("%s,transposeTime,platform\n", labels[TIMES_NUM - 1]);
     
     absolute_time_t toPrint = 0;
     for(int size = 0; size < sizeIndex; ++size){
@@ -105,9 +107,8 @@ void printResults(){
             printf("%llu,", toPrint);
         }
         toPrint = absolute_time_diff_us(times[size * TIMES_NUM + TIMES_NUM - 2], times[size * TIMES_NUM + TIMES_NUM - 1]);
-        printf("%llu,RP2350\n", toPrint);
+        printf("%llu,%llu,RP2350\n", toPrint, transposeTimes[size]);
     }
-        
 }
 
 int main(){
@@ -137,7 +138,7 @@ int main(){
     startTime = get_absolute_time();
 
     for(int i = 0, n = 32; i < ITERATIONS; ++i, n *= 2){
-
+        transposeTime = 0;
         bn = n / 32;
         
         BinaryMatrix_t A = (BinaryMatrix_t)malloc(n * (n / 32) * sizeof(uint32_t));         //768 byte
@@ -209,12 +210,19 @@ int main(){
         OSerial = NULL;
 
         times[timesIndex++] = get_absolute_time();
+        transposeTimes[transposeTimesIndex++] = transposeTime;
     }
 
     free(BTPU0RegFile);
     free(BTPU0_W_MEMORY);
     free(BTPU0_IO0_MEMORY);
     free(BTPU0_IO1_MEMORY);
+    BTPU0RegFile = NULL;
+    BTPU0_W_MEMORY = NULL;
+    BTPU0_IO0_MEMORY = NULL;
+    BTPU0_IO1_MEMORY = NULL;
+
+
 
     PRINTF_LOG("\nAll tests completed!\n");
     printResults();

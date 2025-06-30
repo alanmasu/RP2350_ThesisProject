@@ -5,3 +5,5 @@ add_library(BinaryMatMul STATIC
 target_include_directories(BinaryMatMul PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
+
+target_link_libraries(BinaryMatMul PUBLIC pico_stdlib)
