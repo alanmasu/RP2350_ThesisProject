@@ -3,12 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <pico/stdlib.h>
-
-// absolute_time_t transposeTime = 0;
-// absolute_time_t computeTime = 0;
-uint32_t transposeTime = 0;
-uint32_t computeTime = 0;
 
 BTPURegFile_t* BTPU0RegFile = (BTPURegFile_t*)BTPU_CREG_BASE;
 BinaryFragment_t*   BTPU0_W_MEMORY = (BinaryFragment_t*)  BTPU_W_MEMORY_BASE;
@@ -47,15 +41,12 @@ void transposeBinaryMatrix(const BinaryMatrix_t input, BinaryMatrix_t output, co
 }
 
 void transposeBinaryFragment(BinaryFragment_t input, BinaryFragment_t output) {
-    // absolute_time_t startTime = get_absolute_time();
     for (int i = 0; i < BINARY_FRAG_SIZE; i++) {
         for (int j = 0; j < BINARY_FRAG_SIZE; j++) {
             int bit = getBit(input, i, j, BINARY_FRAG_SIZE);
             setBit(output, j, i, bit, BINARY_FRAG_SIZE);  // Trasposizione logica
         }
     }
-    // absolute_time_t endTime = get_absolute_time();
-    // transposeTime += absolute_time_diff_us(startTime, endTime);
 }
 
 int popcount32(uint32_t x) {
@@ -72,12 +63,9 @@ uint32_t xnor32(const uint32_t a, const uint32_t b) {
 }
 
 uint32_t binaryMul(const uint32_t a, const uint32_t b) {
-    // absolute_time_t startTime = get_absolute_time();
     uint32_t result;
     result = xnor32(a, b);
     result = popcount32(result);
-    // absolute_time_t endTime = get_absolute_time();
-    // computeTime += absolute_time_diff_us(startTime, endTime);
     return result; 
 }
 
@@ -125,7 +113,6 @@ void loadFragment(BinaryFragment_t frag, const BinaryMatrix_t mat, uint32_t bloc
         frag[i] = mat[wordRow];
         wordRow += cols;
     }
-    // printf("\n");
 }    
 
 void storeFragment(const BinaryFragment_t frag, BinaryMatrix_t mat, uint32_t blockRow, uint32_t blockCol, uint32_t n) {

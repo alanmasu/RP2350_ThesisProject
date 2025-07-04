@@ -181,9 +181,6 @@ int main(){
     startTime = get_absolute_time();
 
     for(int i = 0, n = 32; i < ITERATIONS; ++i, n *= 2){
-        transposeTime = 0;
-        computeTime = 0;
-
         bn = n / 32;
         
         BinaryMatrix_t A = (BinaryMatrix_t)malloc(n * (n / 32) * sizeof(uint32_t));         //768 byte
@@ -253,9 +250,7 @@ int main(){
         A = NULL;
         W = NULL;
         OSerial = NULL;
-
-        transposeTimes[transposeTimesIndex++] = transposeTime;
-        computeTimes[computeTimesIndex++] = computeTime;
+        
         times[timesIndex++] = get_absolute_time();
     }
 
