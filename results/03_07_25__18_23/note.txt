@@ -1,0 +1,3 @@
+Computate i wall-time per differenze
+
+Questo va eseguito più volte con flag di compilazione diversi

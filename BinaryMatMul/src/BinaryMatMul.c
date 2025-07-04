@@ -5,8 +5,10 @@
 #include <stdint.h>
 #include <pico/stdlib.h>
 
-absolute_time_t transposeTime = 0;
-absolute_time_t computeTime = 0;
+// absolute_time_t transposeTime = 0;
+// absolute_time_t computeTime = 0;
+uint32_t transposeTime = 0;
+uint32_t computeTime = 0;
 
 BTPURegFile_t* BTPU0RegFile = (BTPURegFile_t*)BTPU_CREG_BASE;
 BinaryFragment_t*   BTPU0_W_MEMORY = (BinaryFragment_t*)  BTPU_W_MEMORY_BASE;
@@ -45,15 +47,15 @@ void transposeBinaryMatrix(const BinaryMatrix_t input, BinaryMatrix_t output, co
 }
 
 void transposeBinaryFragment(BinaryFragment_t input, BinaryFragment_t output) {
-    absolute_time_t startTime = get_absolute_time();
+    // absolute_time_t startTime = get_absolute_time();
     for (int i = 0; i < BINARY_FRAG_SIZE; i++) {
         for (int j = 0; j < BINARY_FRAG_SIZE; j++) {
             int bit = getBit(input, i, j, BINARY_FRAG_SIZE);
             setBit(output, j, i, bit, BINARY_FRAG_SIZE);  // Trasposizione logica
         }
     }
-    absolute_time_t endTime = get_absolute_time();
-    transposeTime += absolute_time_diff_us(startTime, endTime);
+    // absolute_time_t endTime = get_absolute_time();
+    // transposeTime += absolute_time_diff_us(startTime, endTime);
 }
 
 int popcount32(uint32_t x) {
@@ -70,19 +72,23 @@ uint32_t xnor32(const uint32_t a, const uint32_t b) {
 }
 
 uint32_t binaryMul(const uint32_t a, const uint32_t b) {
-    absolute_time_t startTime = get_absolute_time();
+    // absolute_time_t startTime = get_absolute_time();
     uint32_t result;
     result = xnor32(a, b);
     result = popcount32(result);
-    absolute_time_t endTime = get_absolute_time();
-    computeTime += absolute_time_diff_us(startTime, endTime);
+    // absolute_time_t endTime = get_absolute_time();
+    // computeTime += absolute_time_diff_us(startTime, endTime);
     return result; 
 }
 
 void binaryBlockMatrixMul(const BinaryFragment_t a, const BinaryFragment_t b, BinaryAcc_t acc) {
     for (int row = 0; row < BINARY_FRAG_SIZE; ++row) {
         for (int col = 0; col < BINARY_FRAG_SIZE; ++col) {
-            acc[row][col] += binaryMul(a[row], b[col]);
+            // #ifdef MATH_COMPUTE 
+                acc[row][col] += binaryMul(a[row], b[col]);
+            // #else
+            //     // ++acc[row][col];
+            // #endif
         }
     }
 }
@@ -90,15 +96,21 @@ void binaryBlockMatrixMul(const BinaryFragment_t a, const BinaryFragment_t b, Bi
 void fastBinaryBlockMatrixMul(const BinaryFragment_t a, const BinaryFragment_t b, BinaryAcc_t acc, BinaryFragment_t c, uint32_t signCmp, bool store) {
     for (int row = 0; row < BINARY_FRAG_SIZE; ++row) {
         for (int col = 0; col < BINARY_FRAG_SIZE; ++col) {
-            acc[row][col] += binaryMul(a[row], b[col]);
-            if (store){
-                // Binarizza il risultato e lo memorizza in c
-                if (acc[row][col] > signCmp) {
-                    setBit(c, row, col, 1, BINARY_FRAG_SIZE);
-                } else {
-                    setBit(c, row, col, 0, BINARY_FRAG_SIZE);
+            #ifdef MATH_COMPUTE 
+                acc[row][col] += binaryMul(a[row], b[col]);
+                if (store){
+                    // Binarizza il risultato e lo memorizza in c
+                    if (acc[row][col] > signCmp) {
+                        setBit(c, row, col, 1, BINARY_FRAG_SIZE);
+                    } else {
+                        setBit(c, row, col, 0, BINARY_FRAG_SIZE);
+                    }
                 }
-            }
+            #else
+                __asm__(
+                    "nop \n\t" // Operazione di placeholder per evitare ottimizzazioni
+                );
+            #endif
         }
     }
 }
@@ -182,7 +194,9 @@ void fastBinaryMatrixMul(const BinaryMatrix_t a, const BinaryMatrix_t b, BinaryM
             for (int i = 0; i < blockN; ++i) {
                 loadFragment(a_frag, a, blockRow, i, n);
                 loadFragment(b_frag, b, i, blockCol, k);
-                transposeBinaryFragment(b_frag, b_transposed);
+                #ifdef TRANSPOSE_COMPUTE
+                    transposeBinaryFragment(b_frag, b_transposed);
+                #endif
                 fastBinaryBlockMatrixMul(a_frag, b_transposed, acc, c_frag, signCmp, i == blockN - 1);
             }
             storeFragment(c_frag, c, blockRow, blockCol, k);

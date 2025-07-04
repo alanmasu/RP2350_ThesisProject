@@ -75,7 +75,7 @@ uint32_t timesIndex = 0;
 uint32_t testN = 0;
 absolute_time_t transposeTimes[ITERATIONS] = {0};
 uint32_t transposeTimesIndex = 0;
-absolute_time_t computeTimes[ITERATIONS] = {0};
+uint32_t computeTimes[ITERATIONS] = {0};
 uint32_t computeTimesIndex = 0;
 
 char labels[TIMES_NUM][25] = {
@@ -97,6 +97,7 @@ void printResults(){
     }
     printf("%s,transposeTime,computeTime,platform\n", labels[TIMES_NUM - 1]);
     
+
     absolute_time_t toPrint = 0;
     for(int size = 0; size < sizeIndex; ++size){
         printf("%d,", sizes[size]);
@@ -109,8 +110,44 @@ void printResults(){
             printf("%llu,", toPrint);
         }
         toPrint = absolute_time_diff_us(times[size * TIMES_NUM + TIMES_NUM - 2], times[size * TIMES_NUM + TIMES_NUM - 1]);
-        printf("%llu,%llu,%llu,RP2350\n", toPrint, transposeTimes[size], computeTimes[size]);
+        #if  defined(MATH_COMPUTE) && defined(TRANSPOSE_COMPUTE)
+            printf("%llu,%llu,%llu,RP2350\n", toPrint, transposeTimes[size], computeTimes[size]);
+        #elif !defined(MATH_COMPUTE) && defined(TRANSPOSE_COMPUTE) 
+            printf("%llu,%llu,%llu,RP2350-NOMATH\n", toPrint, transposeTimes[size], computeTimes[size]);
+        #elif !defined(TRANSPOSE_COMPUTE) && defined(MATH_COMPUTE)
+            printf("%llu,%llu,%llu,RP2350-NOTRANSPOSE\n", toPrint, transposeTimes[size], computeTimes[size]);
+        #else
+            printf("%llu,%llu,%llu,RP2350-ONLYMEMORY\n", toPrint, transposeTimes[size], computeTimes[size]);
+        #endif
     }
+}
+
+float profileBinaryMul(uint32_t N){
+    absolute_time_t acc = 0;
+    uint32_t a = rand() % N;
+    uint32_t b = rand() % N;
+    volatile uint32_t* aPtr = &a;
+    volatile uint32_t* bPtr = &b;
+
+    absolute_time_t startTime = get_absolute_time();
+    for(int i = 0; i < N; ++i){
+        uint32_t result = binaryMul(*aPtr, *bPtr);
+    }
+    absolute_time_t endTime = get_absolute_time();
+    acc += absolute_time_diff_us(startTime, endTime);
+    return acc/(float)N;
+}
+
+absolute_time_t profileTransposeBlock(uint32_t N){
+    absolute_time_t acc = 0;
+    for(int i = 0; i < N; ++i){
+        BinaryFragment_t a;
+        absolute_time_t startTime = get_absolute_time();
+        transposeBinaryFragment(a, a);
+        absolute_time_t endTime = get_absolute_time();
+        acc += absolute_time_diff_us(startTime, endTime);
+    }
+    return acc/N;
 }
 
 int main(){
@@ -120,7 +157,11 @@ int main(){
     set_sys_clock_40mhz();
     
     stdio_init_all();
+    printf("Compiled at: %s %s\n", __DATE__, __TIME__);
     printf("Running at %u KHz\n", frequency_count_khz(CLOCKS_FC0_SRC_VALUE_CLK_SYS));
+
+    printf("Binary Matrix wall time: %f us\n", profileBinaryMul(10000000));
+    printf("Transpose block wall time: %llu us\n", profileTransposeBlock(1000));
 
     int bn = 0;
     const uint32_t signCmp = 48;
@@ -213,9 +254,9 @@ int main(){
         W = NULL;
         OSerial = NULL;
 
-        times[timesIndex++] = get_absolute_time();
         transposeTimes[transposeTimesIndex++] = transposeTime;
         computeTimes[computeTimesIndex++] = computeTime;
+        times[timesIndex++] = get_absolute_time();
     }
 
     free(BTPU0RegFile);

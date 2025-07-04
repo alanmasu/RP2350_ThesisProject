@@ -16,6 +16,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <pico/stdlib.h>
+#include "BinaryMatMulConfig.h"
 
 #define BINARY_FRAG_SIZE 32
 
@@ -81,8 +82,10 @@ typedef void(*BTPUCallBackFunct_t)(void);
 extern BinaryFragment_t*   BTPU0_W_MEMORY;
 extern BinaryFragment_t* BTPU0_IO0_MEMORY;
 extern BinaryFragment_t* BTPU0_IO1_MEMORY;
-extern absolute_time_t transposeTime;
-extern absolute_time_t computeTime;
+// extern absolute_time_t transposeTime;
+// extern absolute_time_t computeTime;
+extern uint32_t transposeTime;
+extern uint32_t computeTime;
 
 /// Legge un bit da una matrice binaria bit-packed
 uint8_t getBit(const BinaryMatrix_t mat, uint32_t row, uint32_t col, uint32_t N);
